@@ -14,10 +14,8 @@ from skimage.io import imsave
 from skimage.util import img_as_ubyte, img_as_float
 from tqdm import tqdm
 from scipy.optimize import curve_fit
-import glob
 from av import VideoFrame, container
 from aicsimageio import AICSImage
-import matplotlib.pyplot as plt
 
 
 class Raw_Image_Processor:
@@ -60,18 +58,6 @@ class Raw_Image_Processor:
         assert os.path.exists(self.save_path), "Save path does not exist!"
 
         # TO DO: Set directories to default to current working directory.
-        # Assuming no inputs for keyframe and save_path, we set them to the script directory.
-        # script_dir = os.path.dirname(os.path.realpath(__file__))
-
-        # if keyframe is None:
-        #     self.keyframe = os.path.join(script_dir, 'ideal_frame.tif')
-        # else:
-        #     self.keyframe = keyframe
-
-        # if save_path is None:
-        #     self.save_path = script_dir
-        # else:
-        #     self.save_path = save_path
 
     # Image reading fcn, reads from "img_path" and stores the image in "im1".
     def read_image(self):        
@@ -83,7 +69,7 @@ class Raw_Image_Processor:
             print('Extension not found, check file naming convention!')
 
         if extension == 'nd2':
-        # Load AICS 
+            # Load AICS 
             img = AICSImage(self.img_path)
             self.im1 = img.get_image_data("TYX")
         elif extension == 'tif' or extension == 'tiff':
@@ -93,6 +79,8 @@ class Raw_Image_Processor:
             print('Unsupported file format!')
 
         self.keyframe = img_as_float(io.imread(self.keyframe))
+        if self.desired_dim == None:
+            self.desired_dim = self.im1.shape[0]
     
     def convert_to_grayscale(self):
         '''
@@ -113,7 +101,7 @@ class Raw_Image_Processor:
             self.size_ar.append(self.grayphaseimlist[i].shape)
     
     # Currently only works for square images, working on adding conditionals for rectangular images.
-    # In that case, desired_dim should represent the long axis.
+    #TO DO: Add non-square image processing. 
     def resize_images(self):
         message_flag_check = False
         if all(x == self.size_ar[0] for x in self.size_ar):
@@ -121,19 +109,7 @@ class Raw_Image_Processor:
             print('Checking for downsampling, target is: (' + str(self.desired_dim) + 'x' + str(self.desired_dim) + ')')
             for i in tqdm(range(len(self.size_ar)), desc = 'Downsampling images'):
                 if self.size_ar[i][0] > self.desired_dim and self.size_ar[i][1] > self.desired_dim:
-                    self.grayphaseimlist[i] = resize(self.grayphaseimlist[i], (self.desired_dim, self.desired_dim), order=3, preserve_range=True)
-
-                #TO DO: Add non-square image processing.    
-                # elif self.size_ar[i][0] > self.desired_dim or self.size_ar[i][1] > self.desired_dim:
-                #     if not message_flag_check:
-                #         print('Images are not square, only downsampling the long axis')
-                #         message_flag_check = True
-                #     if self.size_ar[i][0] > self.size_ar[i][1]:
-                #         resize1 = self.size_ar[i][0]/self.desired_dim
-                #         self.grayphaseimlist[i] = resize(self.grayphaseimlist[i], (self.desired_dim, resize1*self.size_ar[i][1]), order=3, preserve_range=True)
-                #     if self.size_ar[i][1] > self.size_ar[i][0]:
-                #         resize2 = self.size_ar[i][1]/self.desired_dim
-                #         self.grayphaseimlist[i] = resize(self.grayphaseimlist[i], (resize2*self.size_ar[i][0], self.desired_dim), order=3, preserve_range=True)
+                    self.grayphaseimlist[i] = resize(self.grayphaseimlist[i], (self.desired_dim, self.desired_dim), order=3, preserve_range=True)   
                 else:
                     if not message_flag_check:
                         print('Images are already (' + str(self.desired_dim) + 'x' + str(self.desired_dim) + ') or smaller')
@@ -158,8 +134,7 @@ class Raw_Image_Processor:
         x_co = x.flatten()
         y_co = y.flatten()
         pix_val = grayscale_img.flatten()
-
-        # Ridiculous initial guess, but it seems to always work. Or rather, I haven't found a situation where it doesn't work.
+        # Initial guess, works well for all tested images/videos.
         # For now a 2nd order polynomial works well, no need to go higher.
         p0 = [1, 1, 1, 1, 1, 1]
         popt, _ = curve_fit(poly2d_fcn, (x_co, y_co), pix_val, p0=p0) 
@@ -235,7 +210,9 @@ class Raw_Image_Processor:
                     break
     
     def save_fcn(self):
-        print('Saving images to /Users/Moose/Desktop/')
+        print(f'Saving images to: {self.save_path}')
+        if not os.path.exists(self.save_path):
+            os.makedirs
         file_name = self.img_path.split('/')[-1]
         file_name = file_name.split('.')[0]
         imsave(self.save_path + file_name + '_mod.tif', np.array(self.grayphaseimlist8bit))
