@@ -50,14 +50,8 @@ class Raw_Image_Processor:
         self.vid_fps = vid_fps
 
         # Assertions
-        assert self.desired_dim != None, "Desired dimension must be set!"
-        assert self.desired_dim > 0, "Desired dimension must be greater than zero!"
-        assert self.desired_dim % 2 == 0, "Desired dimension must be even!"
         assert os.path.exists(self.img_path), "Image path does not exist!"
-        assert os.path.exists(self.keyframe), "Keyframe path does not exist!"
         assert os.path.exists(self.save_path), "Save path does not exist!"
-
-        # TO DO: Set directories to default to current working directory.
 
     # Image reading fcn, reads from "img_path" and stores the image in "im1".
     def read_image(self):        
@@ -80,8 +74,12 @@ class Raw_Image_Processor:
 
         self.keyframe = img_as_float(io.imread(self.keyframe))
         if self.desired_dim == None:
-            self.desired_dim = self.im1.shape[0]
+            self.desired_dim = self.im1.shape[1]
+            print('Desired dimension not set, setting to original image size!')
     
+        assert self.desired_dim != None, "Desired dimension must be set!"
+        assert self.desired_dim > 0, "Desired dimension must be greater than zero!"
+       
     def convert_to_grayscale(self):
         '''
         Convert RGB to Grayscale, if the image is already grayscale it will skip this step.
@@ -259,14 +257,6 @@ class Raw_Image_Processor:
         else:
             print("No video saved")
         print('All tasks completed successfully')
-
-    def run_all_no_resize(self):
-        self.read_image()
-        self.convert_to_grayscale()
-        self.runflatfield()
-        self.means_match()
-        self.ubyte_convert()
-        self.save_fcn()
 
     def xmod_loss_plot(self):
         plt.figure()
