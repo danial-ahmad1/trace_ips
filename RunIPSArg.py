@@ -4,7 +4,7 @@ import os
 
 # Example Usage with argparse.
 
-parser = argparse.ArgumentParser(prog='RunIPS', description='Run on a folder to contrast flatten phase contrast microscopy videos.')
+parser = argparse.ArgumentParser(prog='RunIPSArg.py', description='Run on a folder to contrast flatten phase contrast microscopy videos.')
 parser.add_argument('-f', '--folder', type=str, required=True, help='Path to the folder to be analyzed')
 parser.add_argument('-d', '--dimension', type=int, required=False, help='Final .tif dimensions')
 parser.add_argument('-k', '--keyframe', type =str, required=False, help='Path to ideal frame')
